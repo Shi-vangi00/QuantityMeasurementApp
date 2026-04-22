@@ -11,47 +11,84 @@ public class QuantityMeasurementApp {
             this.conversionFactor = conversionFactor;
         }
 
-        public double getBaseValue(double value) {
+        /**
+         * Normalizes a value to the base unit (Inches).
+         */
+        public double toInches(double value) {
             return value * conversionFactor;
+        }
+
+        /**
+         * Converts a value from the base unit (Inches) to this unit.
+         */
+        public double fromInches(double valueInInches) {
+            return valueInInches / conversionFactor;
         }
     }
 
-    public static class Length {
+    /**
+     * Immutable Value Object representing a Length.
+     */
+    public static class QuantityLength {
         private final double value;
         private final LengthUnit unit;
 
-        public Length(double value, LengthUnit unit) {
+        public QuantityLength(double value, LengthUnit unit) {
+            if (!Double.isFinite(value)) {
+                throw new IllegalArgumentException("Value must be a finite number");
+            }
             this.value = value;
             this.unit = unit;
+        }
+
+        /**
+         * Instance method to convert this length to a new unit.
+         * Returns a NEW instance to maintain immutability.
+         */
+        public QuantityLength convertTo(LengthUnit targetUnit) {
+            if (targetUnit == null) throw new IllegalArgumentException("Target unit cannot be null");
+            double valueInInches = this.unit.toInches(this.value);
+            double convertedValue = targetUnit.fromInches(valueInInches);
+            return new QuantityLength(convertedValue, targetUnit);
         }
 
         @Override
         public boolean equals(Object obj) {
             if (this == obj) return true;
             if (obj == null || getClass() != obj.getClass()) return false;
+            QuantityLength that = (QuantityLength) obj;
 
-            Length that = (Length) obj;
+            double v1 = this.unit.toInches(this.value);
+            double v2 = that.unit.toInches(that.value);
+            return Math.abs(v1 - v2) < 0.000001;
+        }
 
-            // Centralized conversion logic using the enum factors
-            double value1 = this.unit.getBaseValue(this.value);
-            double value2 = that.unit.getBaseValue(that.value);
-
-            // Use a small epsilon for floating-point comparison to handle cm precision
-            return Math.abs(value1 - value2) < 0.000001;
+        @Override
+        public String toString() {
+            return String.format("%.2f %s", value, unit);
         }
     }
 
+    // --- API Methods (Demonstrating Overloading) ---
+
+    /**
+     * Static API: Convert raw value from source to target.
+     */
+    public static double convert(double value, LengthUnit source, LengthUnit target) {
+        QuantityLength temp = new QuantityLength(value, source);
+        return temp.convertTo(target).value;
+    }
+
     public static void main(String[] args) {
-        System.out.println("=== UC4: Scaled Quantity Measurement App ===");
+        System.out.println("=== UC5: Conversion API Demonstration ===");
 
-        Length oneYard = new Length(1.0, LengthUnit.YARDS);
-        Length threeFeet = new Length(3.0, LengthUnit.FEET);
-        Length thirtySixInches = new Length(36.0, LengthUnit.INCHES);
-        Length oneCm = new Length(1.0, LengthUnit.CENTIMETERS);
-        Length inchFactor = new Length(0.393701, LengthUnit.INCHES);
+        // Using Static API
+        double res1 = convert(1.0, LengthUnit.FEET, LengthUnit.INCHES);
+        System.out.println("1.0 FEET to INCHES: " + res1);
 
-        System.out.println("1.0 Yard == 3.0 Feet: " + oneYard.equals(threeFeet));
-        System.out.println("1.0 Yard == 36.0 Inches: " + oneYard.equals(thirtySixInches));
-        System.out.println("1.0 Centimeter == 0.393701 Inches: " + oneCm.equals(inchFactor));
+        // Using Instance method
+        QuantityLength yards = new QuantityLength(3.0, LengthUnit.YARDS);
+        QuantityLength convertedToFeet = yards.convertTo(LengthUnit.FEET);
+        System.out.println(yards + " is equivalent to " + convertedToFeet);
     }
 }
