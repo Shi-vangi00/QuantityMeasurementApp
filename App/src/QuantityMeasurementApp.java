@@ -11,13 +11,8 @@ public class QuantityMeasurementApp {
             this.conversionFactor = conversionFactor;
         }
 
-        public double toInches(double value) {
-            return value * conversionFactor;
-        }
-
-        public double fromInches(double valueInInches) {
-            return valueInInches / conversionFactor;
-        }
+        public double toInches(double value) { return value * conversionFactor; }
+        public double fromInches(double valueInInches) { return valueInInches / conversionFactor; }
     }
 
     public static class QuantityLength {
@@ -32,19 +27,29 @@ public class QuantityMeasurementApp {
         }
 
         /**
-         * Logic for adding another length to this length.
-         * Returns result in the unit of the current instance (the first operand).
+         * UC6: Implicit addition (defaults to unit of first operand)
          */
         public QuantityLength add(QuantityLength other) {
-            if (other == null) throw new IllegalArgumentException("Second operand cannot be null");
+            return add(other, this.unit);
+        }
 
-            // 1. Normalize both to base unit (Inches)
+        /**
+         * UC7: Explicit addition (caller specifies target unit)
+         */
+        public QuantityLength add(QuantityLength other, LengthUnit targetUnit) {
+            if (other == null) throw new IllegalArgumentException("Operand cannot be null");
+            if (targetUnit == null) throw new IllegalArgumentException("Target unit cannot be null");
+
+            return performAddition(other, targetUnit);
+        }
+
+        /**
+         * Private Utility Method: Centralizes the addition logic to ensure DRY.
+         */
+        private QuantityLength performAddition(QuantityLength other, LengthUnit target) {
             double sumInInches = this.unit.toInches(this.value) + other.unit.toInches(other.value);
-
-            // 2. Convert sum back to the unit of the first operand (this.unit)
-            double resultValue = this.unit.fromInches(sumInInches);
-
-            return new QuantityLength(resultValue, this.unit);
+            double resultValue = target.fromInches(sumInInches);
+            return new QuantityLength(resultValue, target);
         }
 
         @Override
@@ -52,27 +57,27 @@ public class QuantityMeasurementApp {
             if (this == obj) return true;
             if (obj == null || getClass() != obj.getClass()) return false;
             QuantityLength that = (QuantityLength) obj;
-            return Math.abs(this.unit.toInches(this.value) - that.unit.toInches(that.value)) < 0.000001;
+            return Math.abs(this.unit.toInches(this.value) - that.unit.toInches(that.value)) < 0.0001;
         }
 
         @Override
         public String toString() {
-            return String.format("%.2f %s", value, unit);
+            return String.format("%.3f %s", value, unit);
         }
     }
 
     public static void main(String[] args) {
-        System.out.println("=== UC6: Length Addition Demonstration ===");
+        System.out.println("=== UC7: Explicit Target Unit Addition ===");
 
         QuantityLength oneFoot = new QuantityLength(1.0, LengthUnit.FEET);
         QuantityLength twelveInches = new QuantityLength(12.0, LengthUnit.INCHES);
 
-        // 1 Foot + 12 Inches = 2 Feet
-        QuantityLength result = oneFoot.add(twelveInches);
-        System.out.println(oneFoot + " + " + twelveInches + " = " + result);
+        // Case: Result in Yards
+        QuantityLength resultYards = oneFoot.add(twelveInches, LengthUnit.YARDS);
+        System.out.println(oneFoot + " + " + twelveInches + " (Target: YARDS) = " + resultYards);
 
-        // 12 Inches + 1 Foot = 24 Inches (Result unit follows first operand)
-        QuantityLength reverseResult = twelveInches.add(oneFoot);
-        System.out.println(twelveInches + " + " + oneFoot + " = " + reverseResult);
+        // Case: Result in Inches
+        QuantityLength resultInches = oneFoot.add(twelveInches, LengthUnit.INCHES);
+        System.out.println(oneFoot + " + " + twelveInches + " (Target: INCHES) = " + resultInches);
     }
 }
