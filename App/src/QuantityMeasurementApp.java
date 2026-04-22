@@ -11,45 +11,40 @@ public class QuantityMeasurementApp {
             this.conversionFactor = conversionFactor;
         }
 
-        /**
-         * Normalizes a value to the base unit (Inches).
-         */
         public double toInches(double value) {
             return value * conversionFactor;
         }
 
-        /**
-         * Converts a value from the base unit (Inches) to this unit.
-         */
         public double fromInches(double valueInInches) {
             return valueInInches / conversionFactor;
         }
     }
 
-    /**
-     * Immutable Value Object representing a Length.
-     */
     public static class QuantityLength {
         private final double value;
         private final LengthUnit unit;
 
         public QuantityLength(double value, LengthUnit unit) {
-            if (!Double.isFinite(value)) {
-                throw new IllegalArgumentException("Value must be a finite number");
-            }
+            if (!Double.isFinite(value)) throw new IllegalArgumentException("Invalid value");
+            if (unit == null) throw new IllegalArgumentException("Unit cannot be null");
             this.value = value;
             this.unit = unit;
         }
 
         /**
-         * Instance method to convert this length to a new unit.
-         * Returns a NEW instance to maintain immutability.
+         * Logic for adding another length to this length.
+         * Returns result in the unit of the current instance (the first operand).
          */
-        public QuantityLength convertTo(LengthUnit targetUnit) {
-            if (targetUnit == null) throw new IllegalArgumentException("Target unit cannot be null");
-            double valueInInches = this.unit.toInches(this.value);
-            double convertedValue = targetUnit.fromInches(valueInInches);
-            return new QuantityLength(convertedValue, targetUnit);
+        public QuantityLength add(QuantityLength other) {
+            if (other == null) throw new IllegalArgumentException("Second operand cannot be null");
+
+            // 1. Normalize both to base unit (Inches)
+            double sumInInches = this.unit.toInches(this.value) + other.unit.toInches(other.value);
+
+            // 2. Convert sum back to the unit of the first operand (this.unit)
+            double resultValue = this.unit.fromInches(sumInInches);
+
+            return new QuantityLength(resultValue, this.unit);
         }
 
         @Override
@@ -57,10 +52,7 @@ public class QuantityMeasurementApp {
             if (this == obj) return true;
             if (obj == null || getClass() != obj.getClass()) return false;
             QuantityLength that = (QuantityLength) obj;
-
-            double v1 = this.unit.toInches(this.value);
-            double v2 = that.unit.toInches(that.value);
-            return Math.abs(v1 - v2) < 0.000001;
+            return Math.abs(this.unit.toInches(this.value) - that.unit.toInches(that.value)) < 0.000001;
         }
 
         @Override
@@ -69,26 +61,18 @@ public class QuantityMeasurementApp {
         }
     }
 
-    // --- API Methods (Demonstrating Overloading) ---
-
-    /**
-     * Static API: Convert raw value from source to target.
-     */
-    public static double convert(double value, LengthUnit source, LengthUnit target) {
-        QuantityLength temp = new QuantityLength(value, source);
-        return temp.convertTo(target).value;
-    }
-
     public static void main(String[] args) {
-        System.out.println("=== UC5: Conversion API Demonstration ===");
+        System.out.println("=== UC6: Length Addition Demonstration ===");
 
-        // Using Static API
-        double res1 = convert(1.0, LengthUnit.FEET, LengthUnit.INCHES);
-        System.out.println("1.0 FEET to INCHES: " + res1);
+        QuantityLength oneFoot = new QuantityLength(1.0, LengthUnit.FEET);
+        QuantityLength twelveInches = new QuantityLength(12.0, LengthUnit.INCHES);
 
-        // Using Instance method
-        QuantityLength yards = new QuantityLength(3.0, LengthUnit.YARDS);
-        QuantityLength convertedToFeet = yards.convertTo(LengthUnit.FEET);
-        System.out.println(yards + " is equivalent to " + convertedToFeet);
+        // 1 Foot + 12 Inches = 2 Feet
+        QuantityLength result = oneFoot.add(twelveInches);
+        System.out.println(oneFoot + " + " + twelveInches + " = " + result);
+
+        // 12 Inches + 1 Foot = 24 Inches (Result unit follows first operand)
+        QuantityLength reverseResult = twelveInches.add(oneFoot);
+        System.out.println(twelveInches + " + " + oneFoot + " = " + reverseResult);
     }
 }
