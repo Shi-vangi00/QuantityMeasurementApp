@@ -1,7 +1,9 @@
 public class QuantityMeasurementApp {
     public enum LengthUnit {
+        YARDS(36.0),
         FEET(12.0),
-        INCHES(1.0);
+        INCHES(1.0),
+        CENTIMETERS(0.393701);
 
         private final double conversionFactor;
 
@@ -9,14 +11,11 @@ public class QuantityMeasurementApp {
             this.conversionFactor = conversionFactor;
         }
 
-        public double getConversionFactor() {
-            return conversionFactor;
+        public double getBaseValue(double value) {
+            return value * conversionFactor;
         }
     }
 
-    /**
-     * Unified Length class to represent any measurement with a value and unit.
-     */
     public static class Length {
         private final double value;
         private final LengthUnit unit;
@@ -33,25 +32,26 @@ public class QuantityMeasurementApp {
 
             Length that = (Length) obj;
 
-            // Convert both to base unit (Inches) before comparing
-            double value1 = this.value * this.unit.getConversionFactor();
-            double value2 = that.value * that.unit.getConversionFactor();
+            // Centralized conversion logic using the enum factors
+            double value1 = this.unit.getBaseValue(this.value);
+            double value2 = that.unit.getBaseValue(that.value);
 
-            return Double.compare(value1, value2) == 0;
+            // Use a small epsilon for floating-point comparison to handle cm precision
+            return Math.abs(value1 - value2) < 0.000001;
         }
     }
 
-    // Static demonstration methods
-    public static void demonstrateFeetInchesComparison() {
-        Length oneFoot = new Length(1.0, LengthUnit.FEET);
-        Length twelveInches = new Length(12.0, LengthUnit.INCHES);
-
-        System.out.println("Input: 1.0 Feet and 12.0 Inches");
-        System.out.println("Output: Equal (" + oneFoot.equals(twelveInches) + ")");
-    }
-
     public static void main(String[] args) {
-        System.out.println("=== UC3: Refactored Quantity Measurement App ===");
-        demonstrateFeetInchesComparison();
+        System.out.println("=== UC4: Scaled Quantity Measurement App ===");
+
+        Length oneYard = new Length(1.0, LengthUnit.YARDS);
+        Length threeFeet = new Length(3.0, LengthUnit.FEET);
+        Length thirtySixInches = new Length(36.0, LengthUnit.INCHES);
+        Length oneCm = new Length(1.0, LengthUnit.CENTIMETERS);
+        Length inchFactor = new Length(0.393701, LengthUnit.INCHES);
+
+        System.out.println("1.0 Yard == 3.0 Feet: " + oneYard.equals(threeFeet));
+        System.out.println("1.0 Yard == 36.0 Inches: " + oneYard.equals(thirtySixInches));
+        System.out.println("1.0 Centimeter == 0.393701 Inches: " + oneCm.equals(inchFactor));
     }
 }
